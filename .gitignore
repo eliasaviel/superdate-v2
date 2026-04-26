@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+
+# Expo
+mobile/.expo/
+mobile/dist/
+
+# Backend uploads
+backend/uploads/
+
+# Agent report (generated, not source)
+agent/report.md
+
+# OS
+.DS_Store
+Thumbs.db
