@@ -1,15 +1,28 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../utils/colors';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3001';
 
-const STAGE_LABELS: Record<string, { label: string; color: string }> = {
-  matched: { label: '💬 Schedule Vibe Check', color: '#FF6B35' },
-  vibe_check: { label: '🎥 Vibe Check', color: '#9C27B0' },
-  superdate: { label: '🍷 Plan SuperDate', color: '#E91E63' },
-  dating: { label: '💬 Chat Open', color: '#4CAF50' },
+type ActionConfig = {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  filled: boolean;
 };
+
+function getAction(stage: string, chat_unlocked: boolean): ActionConfig {
+  if (chat_unlocked || stage === 'dating') {
+    return { label: 'Open Chat', icon: 'chatbubble-outline', filled: true };
+  }
+  if (stage === 'superdate') {
+    return { label: 'Plan Date', icon: 'restaurant-outline', filled: true };
+  }
+  if (stage === 'vibe_check') {
+    return { label: 'Call Scheduled', icon: 'videocam-outline', filled: false };
+  }
+  return { label: 'Schedule Call', icon: 'calendar-outline', filled: true };
+}
 
 interface Props {
   match: {
@@ -17,8 +30,6 @@ interface Props {
     age?: number;
     city?: string;
     primary_photo?: string;
-    matched_at?: string;
-    last_message?: string;
     stage?: string;
     chat_unlocked?: boolean;
   };
@@ -31,45 +42,83 @@ export default function MatchCard({ match }: Props) {
       : match.primary_photo
     : null;
 
-  const stageInfo = STAGE_LABELS[match.stage || 'matched'] || STAGE_LABELS.matched;
+  const action = getAction(match.stage || 'matched', !!match.chat_unlocked);
 
   return (
     <View style={styles.card}>
+      {/* Photo */}
       {photoUri ? (
-        <Image source={{ uri: photoUri }} style={styles.avatar} />
+        <Image source={{ uri: photoUri }} style={styles.photo} />
       ) : (
-        <View style={styles.avatarPlaceholder}>
+        <View style={styles.photoPlaceholder}>
           <Text style={{ fontSize: 28 }}>👤</Text>
         </View>
       )}
+
+      {/* Info */}
       <View style={styles.info}>
         <Text style={styles.name}>
           {match.first_name}{match.age ? `, ${match.age}` : ''}
         </Text>
-        {match.city && <Text style={styles.city}>📍 {match.city}</Text>}
-        <View style={[styles.stageBadge, { backgroundColor: stageInfo.color + '22' }]}>
-          <Text style={[styles.stageText, { color: stageInfo.color }]}>{stageInfo.label}</Text>
-        </View>
+        {match.city && <Text style={styles.city}>{match.city}</Text>}
       </View>
-      <Text style={styles.arrow}>›</Text>
+
+      {/* Action button */}
+      <View style={[styles.actionBtn, !action.filled && styles.actionBtnOutline]}>
+        <Ionicons
+          name={action.icon}
+          size={13}
+          color={action.filled ? '#fff' : colors.textSecondary}
+          style={{ marginRight: 4 }}
+        />
+        <Text style={[styles.actionText, !action.filled && styles.actionTextOutline]}>
+          {action.label}
+        </Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.card, borderRadius: 16, padding: 14,
-    flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: 14,
   },
-  avatar: { width: 56, height: 56, borderRadius: 28, marginRight: 14 },
-  avatarPlaceholder: {
-    width: 56, height: 56, borderRadius: 28, marginRight: 14,
-    backgroundColor: colors.border, justifyContent: 'center', alignItems: 'center',
+  photo: {
+    width: 62,
+    height: 62,
+    borderRadius: 14,
+    backgroundColor: colors.border,
   },
-  info: { flex: 1, gap: 4 },
-  name: { color: colors.text, fontSize: 17, fontWeight: '700' },
-  city: { color: colors.textSecondary, fontSize: 13 },
-  stageBadge: { alignSelf: 'flex-start', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginTop: 2 },
-  stageText: { fontSize: 12, fontWeight: '700' },
-  arrow: { color: colors.textSecondary, fontSize: 22 },
+  photoPlaceholder: {
+    width: 62,
+    height: 62,
+    borderRadius: 14,
+    backgroundColor: colors.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  info: { flex: 1 },
+  name: { color: colors.text, fontSize: 16, fontWeight: '700' },
+  city: { color: colors.textSecondary, fontSize: 13, marginTop: 3 },
+
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  actionBtnOutline: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  actionText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  actionTextOutline: { color: colors.textSecondary },
 });
